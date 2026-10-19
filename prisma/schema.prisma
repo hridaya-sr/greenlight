@@ -1,8 +1,8 @@
 // Greenlight data model.
 //
-// Local dev uses SQLite. For Vercel/production, change `provider` to
-// "postgresql" and point DATABASE_URL at Postgres (see README). The schema
-// avoids SQLite-only features so it runs unchanged on both.
+// Local dev uses SQLite. When DATABASE_URL is a Postgres URL, prisma.config.ts
+// generates a Postgres copy of this file automatically, so edit only this one.
+// The schema avoids SQLite-only features so it runs unchanged on both.
 
 generator client {
   provider = "prisma-client"

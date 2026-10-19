@@ -47,3 +47,4 @@ next-env.d.ts
 /storage
 /data/irs-downloads
 !.env.example
+/prisma/schema.postgres.prisma

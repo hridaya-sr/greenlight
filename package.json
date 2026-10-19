@@ -12,13 +12,15 @@
     "samples": "tsx scripts/generate-samples.ts",
     "irs:load": "tsx scripts/load-irs.ts",
     "setup": "prisma db push && prisma generate && npm run samples && npm run db:seed && npm run irs:load -- --sample",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "setup:vercel": "tsx scripts/setup-vercel.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
     "@prisma/adapter-better-sqlite3": "^7.10.1",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@vercel/blob": "^2.8.2",
     "exceljs": "^4.4.0",
     "next": "16.4.2",
     "papaparse": "^5.7.0",

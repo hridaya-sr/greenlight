@@ -147,10 +147,11 @@ prisma/schema.prisma        data model (chapters, documents, extracted fields, I
 prisma/seed.ts              demo seed
 scripts/load-irs.ts         IRS bulk data loader
 scripts/generate-samples.ts sample IRS files, chapter CSV/XLSX, demo PDFs
+scripts/setup-vercel.ts     load the demo into hosted Neon + Blob
 src/lib/irs/parse.ts        IRS file parsers
 src/lib/compliance.ts       flags and status rules
 src/lib/extraction.ts       Claude document extraction and source checking
-src/lib/storage.ts          storage interface (local disk; S3/R2 to add)
+src/lib/storage.ts          storage interface: local disk or Vercel Blob
 src/lib/chapter-import.ts   CSV/XLSX chapter import
 src/lib/emails.ts           reminder and education email templates
 src/app/(hq)/               HQ dashboard, chapter detail, settings
@@ -160,18 +161,35 @@ src/app/api/                upload, import, export, and file routes
 
 ## Deploying to Vercel
 
-1. **Database.** In `prisma/schema.prisma`, set `provider = "postgresql"`, then set
-   `DATABASE_URL` to a Postgres connection string (for example Neon from the
-   Vercel Marketplace). `src/lib/db.ts` picks the Postgres driver automatically.
-   Run `npx prisma db push` against it, then the seed and IRS loader from your
-   machine with the same `DATABASE_URL`.
-2. **Storage.** Vercel's filesystem isn't persistent, so uploaded files would
-   disappear. Implement the `Storage` interface in `src/lib/storage.ts` for
-   S3 or R2 and set `STORAGE_DRIVER`. The seed's sample PDFs need it too.
-3. **Environment.** Set `ANTHROPIC_API_KEY` and `APP_URL` (used to build upload links in emails).
+The same code runs locally on SQLite and on Vercel with Neon Postgres and a
+private Vercel Blob store. `prisma.config.ts` switches to Postgres whenever
+`DATABASE_URL` is a Postgres URL, and `src/lib/storage.ts` switches to Blob
+whenever Blob credentials are present.
 
-The upload route asks for up to 120 seconds (`maxDuration`) for extraction.
-Check that your Vercel plan allows a function duration that long.
+1. **Create the project.** Import the GitHub repo at https://vercel.com/new
+   (or run `vercel link`).
+2. **Connect storage.** In Vercel's **Storage** tab, connect a **Neon** database
+   and a **Blob** store (private) to the project. This sets `DATABASE_URL`,
+   `BLOB_STORE_ID`, and related variables. Nothing needs to be typed by hand.
+   Optionally add `ANTHROPIC_API_KEY`; without it, uploads use the text fallback.
+3. **Load the demo data** from your machine (stop `npm run dev` first):
+   ```bash
+   vercel env pull .env.vercel   # gitignored
+   npm run setup:vercel
+   ```
+   This creates the tables, seeds the 25 chapters with their sample PDFs (into
+   Blob), and loads the sample IRS data. Your local `.env` and `dev.db` aren't
+   touched. Run it again any time to reset the hosted demo.
+4. **Deploy.** Push to GitHub, or redeploy from the Vercel dashboard. Storage
+   connections only apply to deployments made after they were added.
+
+`DATABASE_URL` must be set at build time, because Prisma generates a
+provider-specific client. On Vercel, connected-store variables are available
+during the build automatically.
+
+Upload links in emails use `APP_URL` if set, otherwise the project's
+production URL from Vercel. The upload route allows up to 120 seconds
+(`maxDuration`) for Claude extraction; check that your plan permits that.
 
 ## Not included (by design)
 

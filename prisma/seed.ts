@@ -7,21 +7,21 @@
  *   npm run db:seed
  */
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
 import { db } from "../src/lib/db";
 import { newChapterToken } from "../src/lib/chapter-import";
 import { DEFAULT_SETTINGS } from "../src/lib/settings";
-import { getStorage, storageKey } from "../src/lib/storage";
+import { getStorage, storageDriver, storageKey } from "../src/lib/storage";
 import { SAMPLE_CHAPTERS, treasurerEmail } from "../src/lib/sample/chapters";
 import { makeBankStatement, makeDeterminationLetter, type SampleDoc } from "../src/lib/sample/documents";
 
 async function main() {
+  const storage = getStorage();
+  console.log(`Storage: ${storageDriver()}`);
+  // Remove files for existing documents (works for local disk and Blob)
+  const old = await db.document.findMany({ select: { storageKey: true } });
+  await Promise.all(old.map((d) => storage.delete(d.storageKey).catch(() => {})));
   await db.document.deleteMany();
   await db.chapter.deleteMany();
-  if ((process.env.STORAGE_DRIVER ?? "local") === "local") {
-    fs.rmSync(path.resolve(process.env.STORAGE_DIR ?? "./storage", "chapters"), { recursive: true, force: true });
-  }
 
   await db.settings.upsert({
     where: { id: 1 },
@@ -29,7 +29,6 @@ async function main() {
     create: { id: 1, ...DEFAULT_SETTINGS },
   });
 
-  const storage = getStorage();
   const now = new Date();
   let docs = 0;
 
