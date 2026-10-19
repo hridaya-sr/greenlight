@@ -147,7 +147,8 @@ prisma/schema.prisma        data model (chapters, documents, extracted fields, I
 prisma/seed.ts              demo seed
 scripts/load-irs.ts         IRS bulk data loader
 scripts/generate-samples.ts sample IRS files, chapter CSV/XLSX, demo PDFs
-scripts/setup-vercel.ts     load the demo into hosted Neon + Blob
+scripts/vercel-build.ts     on Vercel: sync schema, load demo into an empty DB
+scripts/setup-vercel.ts     same, run from your machine
 src/lib/irs/parse.ts        IRS file parsers
 src/lib/compliance.ts       flags and status rules
 src/lib/extraction.ts       Claude document extraction and source checking
@@ -172,16 +173,23 @@ whenever Blob credentials are present.
    and a **Blob** store (private) to the project. This sets `DATABASE_URL`,
    `BLOB_STORE_ID`, and related variables. Nothing needs to be typed by hand.
    Optionally add `ANTHROPIC_API_KEY`; without it, uploads use the text fallback.
-3. **Load the demo data** from your machine (stop `npm run dev` first):
-   ```bash
-   vercel env pull .env.vercel   # gitignored
-   npm run setup:vercel
-   ```
-   This creates the tables, seeds the 25 chapters with their sample PDFs (into
-   Blob), and loads the sample IRS data. Your local `.env` and `dev.db` aren't
-   touched. Run it again any time to reset the hosted demo.
-4. **Deploy.** Push to GitHub, or redeploy from the Vercel dashboard. Storage
+3. **Deploy.** Push to GitHub, or redeploy from the Vercel dashboard. Storage
    connections only apply to deployments made after they were added.
+
+   Each build runs `scripts/vercel-build.ts` before `next build`. It brings
+   the Neon schema up to date with `prisma db push`, which refuses changes that
+   would drop data. If the database has no chapters, it also loads the demo:
+   25 chapters, sample PDFs into Blob, and sample IRS data. A database that
+   already has chapters is never modified.
+
+   To reset the hosted demo, empty the database (for example, delete and
+   recreate the Neon branch's tables), then redeploy.
+
+   `npm run setup:vercel` does the same from your machine, using a
+   `.env.vercel` file from `vercel env pull .env.vercel --environment=production`.
+   That only works if the database variables aren't marked Sensitive in
+   Vercel. Marketplace Neon variables usually are, in which case the CLI
+   downloads `[SENSITIVE]` placeholders.
 
 `DATABASE_URL` must be set at build time, because Prisma generates a
 provider-specific client. On Vercel, connected-store variables are available

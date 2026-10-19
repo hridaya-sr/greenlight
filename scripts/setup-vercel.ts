@@ -26,6 +26,13 @@ function main() {
     throw new Error(`${ENV_FILE} not found. Run: vercel env pull ${ENV_FILE}`);
   }
   const remote = parse(fs.readFileSync(ENV_FILE));
+  if (remote.DATABASE_URL === "[SENSITIVE]") {
+    throw new Error(
+      "Vercel stores DATABASE_URL as a Sensitive variable, so it can't be pulled. You don't need this script: " +
+        "the Vercel build creates the tables and loads the demo into an empty database (scripts/vercel-build.ts). " +
+        "Or paste the connection string from the Neon dashboard into " + ENV_FILE + ".",
+    );
+  }
   // Schema changes should use a direct (unpooled) connection when available.
   const url = remote.DATABASE_URL_UNPOOLED || remote.DATABASE_URL;
   if (!url || !/^postgres(ql)?:\/\//.test(url)) {
