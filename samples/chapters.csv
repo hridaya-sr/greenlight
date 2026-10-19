@@ -1,0 +1,26 @@
+name,EIN,region,district,treasurer email
+Alpha,89-1043217,Northeast,District 1,treasurer.alpha@ips-chapters.example
+Beta,89-1052864,Northeast,District 1,treasurer.beta@ips-chapters.example
+Gamma,89-1067390,Northeast,District 2,treasurer.gamma@ips-chapters.example
+Delta,89-1071145,Northeast,District 2,treasurer.delta@ips-chapters.example
+Epsilon,89-1089023,Southeast,District 3,treasurer.epsilon@ips-chapters.example
+Zeta,89-1093658,Southeast,District 3,treasurer.zeta@ips-chapters.example
+Eta,89-1104472,Southeast,District 4,treasurer.eta@ips-chapters.example
+Theta,89-1118806,Southeast,District 4,treasurer.theta@ips-chapters.example
+Iota,89-1125539,Midwest,District 5,treasurer.iota@ips-chapters.example
+Kappa,89-1136281,Midwest,District 5,treasurer.kappa@ips-chapters.example
+Lambda,89-1147710,Midwest,District 6,treasurer.lambda@ips-chapters.example
+Mu,89-1152947,Midwest,District 6,treasurer.mu@ips-chapters.example
+Nu,89-1163384,West,District 7,treasurer.nu@ips-chapters.example
+Xi,89-1170628,West,District 7,treasurer.xi@ips-chapters.example
+Omicron,89-1186053,West,District 8,treasurer.omicron@ips-chapters.example
+Pi,89-1191476,West,District 8,treasurer.pi@ips-chapters.example
+Rho,89-1203819,Northeast,District 1,treasurer.rho@ips-chapters.example
+Sigma,89-1214265,Northeast,District 2,treasurer.sigma@ips-chapters.example
+Tau,89-1225790,Southeast,District 3,treasurer.tau@ips-chapters.example
+Upsilon,89-1238102,Southeast,District 4,treasurer.upsilon@ips-chapters.example
+Phi,89-1241637,Midwest,District 5,treasurer.phi@ips-chapters.example
+Chi,89-1256984,Midwest,District 6,treasurer.chi@ips-chapters.example
+Psi,89-1262318,West,District 7,treasurer.psi@ips-chapters.example
+Omega,89-1279045,West,District 8,treasurer.omega@ips-chapters.example
+Alpha Beta,89-1283572,Northeast,District 1,treasurer.alphabeta@ips-chapters.example

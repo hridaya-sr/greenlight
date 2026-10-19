@@ -1,0 +1,174 @@
+// Greenlight data model.
+//
+// Local dev uses SQLite. For Vercel/production, change `provider` to
+// "postgresql" and point DATABASE_URL at Postgres (see README). The schema
+// avoids SQLite-only features so it runs unchanged on both.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// HQ configuration (single row, id = 1)
+// ---------------------------------------------------------------------------
+
+model Settings {
+  id                   Int      @id @default(1)
+  orgName              String
+  // e.g. "{Org Name} – {Chapter Name} Chapter". Tokens: {Org Name}, {Chapter Name}
+  namePattern          String
+  // A filing counts as "recent" if its tax period ended within this many months.
+  filingLookbackMonths Int      @default(24)
+  hqContactName        String   @default("HQ Compliance Team")
+  hqContactEmail       String   @default("compliance@example.org")
+  updatedAt            DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Chapters (uploaded by HQ)
+// ---------------------------------------------------------------------------
+
+model Chapter {
+  id             String     @id @default(cuid())
+  name           String
+  ein            String     @unique // 9 digits, no dash
+  region         String
+  district       String
+  treasurerEmail String
+  // Unguessable token for the chapter's no-login upload page at /c/[token]
+  token          String     @unique
+  documents      Document[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([region, district])
+}
+
+// ---------------------------------------------------------------------------
+// Chapter-submitted documents and AI-extracted fields
+// ---------------------------------------------------------------------------
+
+model Document {
+  id               String           @id @default(cuid())
+  chapterId        String
+  chapter          Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  // "determination_letter" | "financial" (bank statement or budget)
+  kind             String
+  originalName     String
+  mimeType         String
+  sizeBytes        Int
+  storageKey       String
+  // "pending" | "processing" | "done" | "failed"
+  extractionStatus String           @default("pending")
+  extractionError  String?
+  // What Claude thinks the document is: "irs_determination_letter" | "bank_statement" | "budget" | "other"
+  detectedType     String?
+  extractedBy      String?          // model id, or "seed" for pre-extracted demo data
+  extractedAt      DateTime?
+  fields           ExtractedField[]
+  uploadedAt       DateTime         @default(now())
+
+  @@index([chapterId, kind])
+}
+
+model ExtractedField {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  // "ein" | "org_name" | "date" | "ending_balance"
+  field      String
+  // Human label, e.g. "Letter date", "Statement period end"
+  label      String
+  value      String
+  // Provenance: 1-indexed page and the verbatim text the value came from
+  page       Int?
+  sourceText String?
+  // Whether sourceText was found verbatim in the document's text layer
+  // (null = could not check, e.g. images or scanned PDFs)
+  verified   Boolean?
+  sortOrder  Int      @default(0)
+
+  @@index([documentId])
+}
+
+// ---------------------------------------------------------------------------
+// IRS bulk data (loaded by scripts/load-irs.ts), keyed by EIN
+// ---------------------------------------------------------------------------
+
+// Exempt Organizations Business Master File (eo1-4.csv / eo_xx.csv)
+model IrsBmf {
+  ein            String   @id
+  name           String
+  ico            String?  // "in care of" name
+  street         String?
+  city           String?
+  state          String?
+  zip            String?
+  groupExemption String?  // GROUP
+  subsection     String?  // SUBSECTION, e.g. "07" = 501(c)(7)
+  affiliation    String?
+  classification String?
+  ruling         String?  // YYYYMM ruling date
+  deductibility  String?
+  foundation     String?
+  organization   String?
+  status         String?  // STATUS, "01" = unconditional exemption
+  taxPeriod      String?  // TAX_PERIOD, YYYYMM of the most recent return on file
+  filingReqCd    String?  // FILING_REQ_CD
+  acctPd         String?  // ACCT_PD, month (01-12) the fiscal year ends
+  assetAmt       Float?
+  incomeAmt      Float?
+  revenueAmt     Float?
+  nteeCd         String?
+  sortName       String?
+  sourceFile     String?
+}
+
+// Automatic Revocation of Exemption list (data-download-revocation.zip)
+model IrsRevocation {
+  id                Int       @id @default(autoincrement())
+  ein               String
+  legalName         String
+  dba               String?
+  city              String?
+  state             String?
+  zip               String?
+  exemptionType     String?   // subsection, e.g. "07"
+  revocationDate    DateTime?
+  postingDate       DateTime?
+  reinstatementDate DateTime?
+
+  @@index([ein])
+}
+
+// 990-N (e-Postcard) filings (data-download-epostcard.zip)
+model Irs990N {
+  id                     Int       @id @default(autoincrement())
+  ein                    String
+  taxYear                Int
+  orgName                String
+  grossReceiptsUnder50k  Boolean
+  terminated             Boolean
+  periodBegin            DateTime?
+  periodEnd              DateTime?
+  website                String?
+  principalOfficer       String?
+  city                   String?
+  state                  String?
+
+  @@index([ein])
+}
+
+// One row per dataset load, so the UI can show "IRS data as of ..."
+model IrsDataLoad {
+  id       Int      @id @default(autoincrement())
+  dataset  String   // "bmf" | "revocation" | "epostcard"
+  source   String   // URL or local path
+  rowCount Int
+  loadedAt DateTime @default(now())
+}
